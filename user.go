@@ -1,6 +1,8 @@
 package main
 
-import "net"
+import (
+	"net"
+)
 
 // 用户类
 type User struct {
@@ -60,6 +62,20 @@ func (this *User) DoMessage(msg string) {
 			this.SendMessage(onlineMsg)
 		}
 		this.Svr.MapLock.RUnlock()
+	} else if len([]rune(msg)) > 10 && string([]rune(msg)[0:10]) == "更改用户名@群助手@" {
+		//带中文的字符串一定要先转成[]rune类型再做各类操作!!!
+		NewName := string([]rune(msg)[10:])
+		this.Svr.MapLock.Lock()
+		defer this.Svr.MapLock.Unlock()
+		_, ok := this.Svr.OnlineMap[NewName]
+		if ok {
+			this.SendMessage("您更改的用户名已存在")
+			return
+		}
+		delete(this.Svr.OnlineMap, this.Name)
+		this.Svr.OnlineMap[NewName] = this
+		this.Name = NewName
+		this.SendMessage("用户名更改成功!")
 	} else {
 		//广播消息
 		this.Svr.BroadCast(this, msg)
