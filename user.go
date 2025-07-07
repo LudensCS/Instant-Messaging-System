@@ -46,10 +46,24 @@ func (this *User) Offline() {
 	this.Svr.BroadCast(this, "下线")
 }
 
+// 给当前user对应客户端发送消息
+func (this *User) SendMessage(msg string) {
+	this.Ch <- msg
+}
+
 // 处理用户消息业务
 func (this *User) DoMessage(msg string) {
-	//广播消息
-	this.Svr.BroadCast(this, msg)
+	if msg == "查询当前在线用户@群助手" {
+		this.Svr.MapLock.RLock()
+		for _, user := range this.Svr.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + "在线..."
+			this.SendMessage(onlineMsg)
+		}
+		this.Svr.MapLock.RUnlock()
+	} else {
+		//广播消息
+		this.Svr.BroadCast(this, msg)
+	}
 }
 
 // 监听当前User管道的方法,一旦有Message,立即发送给对应客户端
