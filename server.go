@@ -52,21 +52,17 @@ func (this *Server) BroadCast(user *User, msg string) {
 func (this *Server) Handler(conn net.Conn) {
 	fmt.Println("链接建立成功")
 	//创建新用户
-	user := NewUser(conn)
-	//用户上线,将用户加入在线用户列表
-	this.MapLock.Lock()
-	this.OnlineMap[user.Name] = user
-	this.MapLock.Unlock()
-	//广播当前用户上线消息
-	this.BroadCast(user, "已上线")
+	user := NewUser(conn, this)
+	user.Online()
 	//接受用户发送的消息并广播
 	go func() {
 		buf := make([]byte, 4096) //缓冲区
 		for {
 			//从conn中读取消息到buf,n是成功读取的字节数
 			n, err := conn.Read(buf)
+			//用户下线
 			if n == 0 {
-				this.BroadCast(user, "下线")
+				user.Offline()
 				return
 			}
 			if err != nil && err != io.EOF {
@@ -74,7 +70,8 @@ func (this *Server) Handler(conn net.Conn) {
 				return
 			}
 			msg := string(buf[0 : n-1]) //[0,n-1),不取n-1是为了去掉末尾的换行
-			this.BroadCast(user, msg)
+			//用户针对message进行处理
+			user.DoMessage(msg)
 		}
 	}()
 	//阻塞当前go程,保证user实例存在
