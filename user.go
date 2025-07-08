@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"time"
 )
 
 // 用户类
@@ -42,15 +43,23 @@ func (this *User) Online() {
 func (this *User) Offline() {
 	//用户下线,将用户从在线用户列表中删除
 	this.Svr.MapLock.Lock()
+	defer this.Svr.MapLock.Unlock()
+	if _, ok := this.Svr.OnlineMap[this.Name]; !ok {
+		return
+	}
 	delete(this.Svr.OnlineMap, this.Name)
-	this.Svr.MapLock.Unlock()
 	//广播当前用户下线消息
 	this.Svr.BroadCast(this, "下线")
+	time.Sleep(100 * time.Millisecond)
+	close(this.Ch)
+	this.Conn.Close()
 }
 
 // 给当前user对应客户端发送消息
 func (this *User) SendMessage(msg string) {
-	this.Ch <- msg
+	if this.Ch != nil {
+		this.Ch <- msg
+	}
 }
 
 // 处理用户消息业务

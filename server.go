@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // 服务器
@@ -54,6 +55,11 @@ func (this *Server) Handler(conn net.Conn) {
 	//创建新用户
 	user := NewUser(conn, this)
 	user.Online()
+	//可允许的最长不活跃时长
+	const TIMEOUT = time.Second * 20
+	//计时器,监测用户活动状况
+	tick := time.NewTimer(TIMEOUT)
+	defer tick.Stop()
 	//接受用户发送的消息并广播
 	go func() {
 		buf := make([]byte, 4096) //缓冲区
@@ -67,15 +73,25 @@ func (this *Server) Handler(conn net.Conn) {
 			}
 			if err != nil && err != io.EOF {
 				fmt.Println("conn read error:", err)
+				user.Offline()
 				return
 			}
+			tick.Reset(TIMEOUT)
 			msg := string(buf[0 : n-1]) //[0,n-1),不取n-1是为了去掉末尾的换行
 			//用户针对message进行处理
 			user.DoMessage(msg)
 		}
 	}()
-	//阻塞当前go程,保证user实例存在
+	//超时强踢功能
+WAIT:
 	for {
+		select {
+		case <-tick.C:
+			user.SendMessage("您长时间未活动,已被强制踢出")
+			time.Sleep(100 * time.Millisecond)
+			user.Offline()
+			break WAIT
+		}
 	}
 }
 
