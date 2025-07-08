@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 	"time"
 )
 
@@ -85,6 +86,19 @@ func (this *User) DoMessage(msg string) {
 		this.Svr.OnlineMap[NewName] = this
 		this.Name = NewName
 		this.SendMessage("用户名更改成功!")
+	} else if len([]rune(msg)) >= 1 && msg[0] == '@' {
+		SplitedMsg := strings.Split(msg, "@")
+		if len(SplitedMsg) != 3 || SplitedMsg[2] == "" {
+			this.SendMessage("消息格式不正确,请使用 \"@张三@消息\" 格式")
+			return
+		}
+		Receiver := SplitedMsg[1]
+		RecUser, ok := this.Svr.OnlineMap[Receiver]
+		if ok {
+			RecUser.SendMessage(this.Name + " 对您说:" + SplitedMsg[2])
+		} else {
+			this.SendMessage("您对话的用户不存在")
+		}
 	} else {
 		//广播消息
 		this.Svr.BroadCast(this, msg)

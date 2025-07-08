@@ -56,7 +56,7 @@ func (this *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, this)
 	user.Online()
 	//可允许的最长不活跃时长
-	const TIMEOUT = time.Second * 20
+	const TIMEOUT = time.Minute * 5
 	//计时器,监测用户活动状况
 	tick := time.NewTimer(TIMEOUT)
 	defer tick.Stop()
