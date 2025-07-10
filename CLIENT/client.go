@@ -7,6 +7,8 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
+	"time"
 )
 
 // 客户端
@@ -61,6 +63,8 @@ func (this *Client) UpdateName() bool {
 		fmt.Println("reader.ReadString error:", ERR)
 		return false
 	}
+	msg = strings.TrimSuffix(msg, "\r\n")
+	msg = strings.TrimSuffix(msg, "\n")
 	this.Name = msg
 	msg = "更改用户名@群助手@" + this.Name
 	_, err := this.Conn.Write([]byte(msg))
@@ -69,6 +73,37 @@ func (this *Client) UpdateName() bool {
 		return false
 	}
 	return true
+}
+
+// 公聊模式
+func (this *Client) PublicChat() {
+	fmt.Println("<<<<<<<<请输入聊天内容,exit表示退出当前模式>>>>>>>>")
+	reader := bufio.NewReader(os.Stdin)
+	msg, err := reader.ReadString('\n')
+	//去除末尾换行
+	msg = strings.TrimSuffix(msg, "\r\n")
+	msg = strings.TrimSuffix(msg, "\n")
+	if err != nil {
+		fmt.Println("reader.ReadString error:", err)
+		return
+	}
+	for msg != "exit" {
+		if len([]rune(msg)) > 0 {
+			msg += "\n"
+			this.Conn.Write([]byte(msg))
+		} else {
+			fmt.Println("<<<<<<<<聊天内容不能为空>>>>>>>>")
+		}
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("<<<<<<<<请输入聊天内容,exit表示退出当前模式>>>>>>>>")
+		msg, err = reader.ReadString('\n')
+		msg = strings.TrimSuffix(msg, "\r\n")
+		msg = strings.TrimSuffix(msg, "\n")
+		if err != nil {
+			fmt.Println("reader.ReadString error:", err)
+			return
+		}
+	}
 }
 
 // 打印服务端的回应消息,读写分离的思路
@@ -89,7 +124,7 @@ func (this *Client) Run() {
 		case 0:
 			return
 		case 1:
-			fmt.Println("公聊模式...")
+			this.PublicChat()
 		case 2:
 			fmt.Println("私聊模式...")
 		case 3:

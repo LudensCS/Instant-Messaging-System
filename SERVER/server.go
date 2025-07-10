@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -77,7 +78,9 @@ func (this *Server) Handler(conn net.Conn) {
 				return
 			}
 			tick.Reset(TIMEOUT)
-			msg := string(buf[0 : n-1]) //[0,n-1),不取n-1是为了去掉末尾的换行
+			//去除末尾换行
+			msg := strings.TrimSuffix(string(buf[0:n]), "\r\n")
+			msg = strings.TrimSuffix(msg, "\n")
 			//用户针对message进行处理
 			user.DoMessage(msg)
 		}
