@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -100,6 +101,16 @@ WAIT:
 
 // 启动Server的接口
 func (this *Server) Start() {
+	//接收关服指令
+	go func() {
+		var command string
+		for {
+			fmt.Scanln(&command)
+			if command == "exit" {
+				os.Exit(0)
+			}
+		}
+	}()
 	//socket listen
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", this.Ip, this.Port))
 	if err != nil {

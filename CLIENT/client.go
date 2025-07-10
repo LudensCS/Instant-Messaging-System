@@ -78,39 +78,69 @@ func (this *Client) UpdateName() bool {
 
 // 公聊模式
 func (this *Client) PublicChat() {
-	fmt.Println("<<<<<<<<请输入聊天内容,exit表示退出当前模式>>>>>>>>")
-	reader := bufio.NewReader(os.Stdin)
-	msg, err := reader.ReadString('\n')
-	//去除末尾换行
-	msg = strings.TrimSuffix(msg, "\r\n")
-	msg = strings.TrimSuffix(msg, "\n")
-	if err != nil {
-		fmt.Println("reader.ReadString error:", err)
-		return
-	}
-	for msg != "exit" {
-		if len([]rune(msg)) > 0 {
-			msg += "\n"
-			this.Conn.Write([]byte(msg))
-		} else {
-			fmt.Println("<<<<<<<<聊天内容不能为空>>>>>>>>")
-		}
+	for {
 		time.Sleep(100 * time.Millisecond)
 		fmt.Println("<<<<<<<<请输入聊天内容,exit表示退出当前模式>>>>>>>>")
-		msg, err = reader.ReadString('\n')
+		reader := bufio.NewReader(os.Stdin)
+		msg, err := reader.ReadString('\n')
 		msg = strings.TrimSuffix(msg, "\r\n")
 		msg = strings.TrimSuffix(msg, "\n")
 		if err != nil {
 			fmt.Println("reader.ReadString error:", err)
 			return
 		}
+		if msg == "exit" {
+			return
+		}
+		if len([]rune(msg)) > 0 {
+			_, ERR := this.Conn.Write([]byte(msg))
+			if ERR != nil {
+				fmt.Println("Conn.Write error:", err)
+				return
+			}
+		} else {
+			fmt.Println("<<<<<<<<聊天内容不能为空>>>>>>>>")
+		}
 	}
 }
 
 // 查询当前在线用户
 func (this *Client) OnlineUsers() {
-	this.Conn.Write([]byte("查询当前在线用户@群助手\n"))
+	_, err := this.Conn.Write([]byte("查询当前在线用户@群助手\n"))
+	if err != nil {
+		fmt.Println("Conn.Write error:", err)
+		return
+	}
 	time.Sleep(100 * time.Millisecond)
+}
+
+// 私聊模式
+func (this *Client) PrivateChat() {
+	for {
+		this.OnlineUsers()
+		fmt.Println("<<<<<<<<请输入聊天对象的用户名,exit表示退出当前模式>>>>>>>>")
+		reader := bufio.NewReader(os.Stdin)
+		receiver, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("reader.ReadString error:", err)
+			return
+		}
+		receiver = strings.TrimSuffix(receiver, "\r\n")
+		receiver = strings.TrimSuffix(receiver, "\n")
+		if receiver == "exit" {
+			return
+		}
+		if len([]rune(receiver)) > 0 {
+			fmt.Println("<<<<<<<<请输入聊天内容>>>>>>>>")
+			var msg string
+			msg, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("reader.ReadString error:", err)
+				return
+			}
+			this.Conn.Write([]byte("@" + receiver + "@" + msg))
+		}
+	}
 }
 
 // 打印服务端的回应消息,读写分离的思路
@@ -133,7 +163,7 @@ func (this *Client) Run() {
 		case 1:
 			this.PublicChat()
 		case 2:
-			fmt.Println("私聊模式...")
+			this.PrivateChat()
 		case 3:
 			for this.UpdateName() == false {
 			}
