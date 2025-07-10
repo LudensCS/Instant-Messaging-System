@@ -42,9 +42,10 @@ func (this *Client) Menu() bool {
 	fmt.Println("1.公聊模式")
 	fmt.Println("2.私聊模式")
 	fmt.Println("3.更新用户名")
+	fmt.Println("4.查询当前在线用户")
 	fmt.Println("0.退出")
 	fmt.Scanln(&flag)
-	if flag >= 0 && flag <= 3 {
+	if flag >= 0 && flag <= 4 {
 		this.flag = flag
 		return true
 	} else {
@@ -106,6 +107,12 @@ func (this *Client) PublicChat() {
 	}
 }
 
+// 查询当前在线用户
+func (this *Client) OnlineUsers() {
+	this.Conn.Write([]byte("查询当前在线用户@群助手\n"))
+	time.Sleep(100 * time.Millisecond)
+}
+
 // 打印服务端的回应消息,读写分离的思路
 func (this *Client) DoResponse() {
 	//这行代码相当于输出重定向,一旦连接内有数据就立刻输出,跟自己实现缓冲区读取后输出是等价的
@@ -130,6 +137,8 @@ func (this *Client) Run() {
 		case 3:
 			for this.UpdateName() == false {
 			}
+		case 4:
+			this.OnlineUsers()
 		}
 	}
 }
